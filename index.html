@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tabbed Interface</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0f;
+      --surface: #16161a;
+      --border: #2a2a30;
+      --accent: #c8a97e;
+      --accent-glow: rgba(200, 169, 126, 0.15);
+      --text-primary: #f0ece4;
+      --text-secondary: #8a8690;
+      --tab-inactive: #2e2e36;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text-primary);
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 300;
+      line-height: 1.7;
+    }
+
+    /* ── Noise texture overlay ── */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      background-size: 180px 180px;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.4;
+    }
+
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+    }
+
+    /* ── Site header ── */
+    .site-header {
+      text-align: center;
+      margin-bottom: 48px;
+      animation: fadeDown 0.7s ease both;
+    }
+
+    .site-header .eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+
+    .site-header h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.1;
+    }
+
+    .site-header h1 em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    /* ── Card shell ── */
+    .card {
+      width: 100%;
+      max-width: 780px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow:
+        0 0 0 1px rgba(200,169,126,0.06),
+        0 40px 80px rgba(0,0,0,0.5),
+        0 0 60px rgba(200,169,126,0.04);
+      animation: fadeUp 0.7s 0.15s ease both;
+    }
+
+    /* ── Tab bar ── */
+    .tab-bar {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      padding: 0 4px;
+    }
+
+    .tab-btn {
+      position: relative;
+      flex: 1;
+      padding: 20px 10px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      transition: color 0.3s ease;
+      outline: none;
+    }
+
+    .tab-btn::after {
+      content: '';
+      position: absolute;
+      bottom: -1px;
+      left: 15%;
+      right: 15%;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 2px 2px 0 0;
+      transform: scaleX(0);
+      transform-origin: center;
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .tab-btn:hover { color: var(--text-primary); }
+
+    .tab-btn.active {
+      color: var(--accent);
+    }
+
+    .tab-btn.active::after {
+      transform: scaleX(1);
+    }
+
+    /* ── Tab number badge ── */
+    .tab-btn .num {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      line-height: 20px;
+      text-align: center;
+      font-size: 10px;
+      background: var(--tab-inactive);
+      border-radius: 50%;
+      margin-right: 7px;
+      vertical-align: middle;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .tab-btn.active .num {
+      background: var(--accent-glow);
+      color: var(--accent);
+    }
+
+    /* ── Tab panels ── */
+    .tab-panels { padding: 48px 52px; min-height: 360px; }
+
+    .tab-panel {
+      display: none;
+      animation: fadeIn 0.45s ease both;
+    }
+
+    .tab-panel.active { display: block; }
+
+    /* ── Section label ── */
+    .section-label {
+      font-size: 10.5px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 14px;
+    }
+
+    /* ── Home panel ── */
+    .home-heading {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(1.8rem, 4vw, 2.6rem);
+      font-weight: 700;
+      line-height: 1.2;
+      margin-bottom: 20px;
+    }
+
+    .home-heading em {
+      font-style: italic;
+      color: var(--accent);
+    }
+
+    .home-desc {
+      font-size: 15px;
+      color: var(--text-secondary);
+      max-width: 520px;
+      margin-bottom: 36px;
+    }
+
+    .badge-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .badge {
+      padding: 7px 16px;
+      border-radius: 100px;
+      border: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text-secondary);
+      letter-spacing: 0.04em;
+      transition: border-color 0.2s, color 0.2s;
+    }
+
+    .badge:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* ── About panel ── */
+    .about-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+      margin-top: 28px;
+    }
+
+    .about-card {
+      background: rgba(255,255,255,0.025);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px 22px;
+      transition: border-color 0.25s, transform 0.25s;
+    }
+
+    .about-card:hover {
+      border-color: rgba(200,169,126,0.3);
+      transform: translateY(-2px);
+    }
+
+    .about-card .icon {
+      font-size: 26px;
+      margin-bottom: 12px;
+    }
+
+    .about-card h3 {
+      font-family: 'Playfair Display', serif;
+      font-size: 1.05rem;
+      margin-bottom: 8px;
+      color: var(--text-primary);
+    }
+
+    .about-card p {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    .about-intro {
+      font-size: 15px;
+      color: var(--text-secondary);
+    }
+
+    /* ── Contact panel ── */
+    .contact-intro {
+      font-size: 15px;
+      color: var(--text-secondary);
+      margin-bottom: 30px;
+      max-width: 460px;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.25s, box-shadow 0.25s;
+    }
+
+    .form-group input::placeholder,
+    .form-group textarea::placeholder { color: #50505a; }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+      border-color: rgba(200,169,126,0.5);
+      box-shadow: 0 0 0 3px rgba(200,169,126,0.08);
+    }
+
+    .form-group textarea {
+      resize: vertical;
+      min-height: 100px;
+    }
+
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+    .btn-submit {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 30px;
+      background: var(--accent);
+      color: #0d0d0f;
+      border: none;
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13.5px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s;
+      margin-top: 8px;
+    }
+
+    .btn-submit:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-submit:active { transform: translateY(0); }
+
+    .btn-submit svg { width: 15px; height: 15px; }
+
+    /* ── Success toast ── */
+    .toast {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin-top: 18px;
+      padding: 12px 18px;
+      background: rgba(200,169,126,0.1);
+      border: 1px solid rgba(200,169,126,0.3);
+      border-radius: 10px;
+      font-size: 13.5px;
+      color: var(--accent);
+    }
+
+    .toast.show { display: flex; animation: fadeIn 0.4s ease; }
+
+    /* ── Divider ── */
+    .divider {
+      width: 40px;
+      height: 2px;
+      background: var(--accent);
+      border-radius: 2px;
+      margin-bottom: 20px;
+      opacity: 0.6;
+    }
+
+    /* ── Footer ── */
+    .site-footer {
+      margin-top: 28px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      opacity: 0.5;
+      animation: fadeUp 0.7s 0.3s ease both;
+    }
+
+    /* ── Animations ── */
+    @keyframes fadeDown {
+      from { opacity: 0; transform: translateY(-18px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(22px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 580px) {
+      .tab-panels { padding: 34px 24px; }
+      .about-grid { grid-template-columns: 1fr; }
+      .form-row { grid-template-columns: 1fr; }
+      .tab-btn .num { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+
+    <header class="site-header">
+      <p class="eyebrow">Welcome</p>
+      <h1>Our <em>Studio</em></h1>
+    </header>
+
+    <div class="card" role="main">
+
+      <!-- Tab Bar -->
+      <div class="tab-bar" role="tablist" aria-label="Main navigation">
+        <button class="tab-btn active" role="tab" aria-selected="true"  aria-controls="panel-home"    id="tab-home"    onclick="switchTab('home')">
+          <span class="num">01</span>Home
+        </button>
+        <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="panel-about"   id="tab-about"   onclick="switchTab('about')">
+          <span class="num">02</span>About
+        </button>
+        <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="panel-contact" id="tab-contact" onclick="switchTab('contact')">
+          <span class="num">03</span>Contact
+        </button>
+      </div>
+
+      <!-- Tab Panels -->
+      <div class="tab-panels">
+
+        <!-- HOME -->
+        <section class="tab-panel active" id="panel-home" role="tabpanel" aria-labelledby="tab-home">
+          <p class="section-label">Home</p>
+          <div class="divider"></div>
+          <h2 class="home-heading">Crafting&nbsp;digital<br><em>experiences</em>&nbsp;that&nbsp;last.</h2>
+          <p class="home-desc">
+            We're a boutique creative studio focused on design systems, interactive interfaces,
+            and brand narratives that connect with real people. Every pixel is intentional.
+          </p>
+          <div class="badge-row">
+            <span class="badge">✦ UI / UX Design</span>
+            <span class="badge">✦ Web Development</span>
+            <span class="badge">✦ Brand Identity</span>
+            <span class="badge">✦ Motion Design</span>
+          </div>
+        </section>
+
+        <!-- ABOUT -->
+        <section class="tab-panel" id="panel-about" role="tabpanel" aria-labelledby="tab-about">
+          <p class="section-label">About Us</p>
+          <div class="divider"></div>
+          <p class="about-intro">
+            Founded in 2018, our team of designers and engineers builds thoughtful digital products
+            for ambitious brands. We believe great work emerges from deep collaboration and relentless curiosity.
+          </p>
+          <div class="about-grid">
+            <div class="about-card">
+              <div class="icon">✦</div>
+              <h3>Our Mission</h3>
+              <p>To create interfaces that feel effortless yet extraordinary — where function and beauty are inseparable.</p>
+            </div>
+            <div class="about-card">
+              <div class="icon">◈</div>
+              <h3>Our Process</h3>
+              <p>Research, ideate, prototype, refine. We iterate quickly and involve clients at every step of the journey.</p>
+            </div>
+            <div class="about-card">
+              <div class="icon">◎</div>
+              <h3>Our Values</h3>
+              <p>Transparency, craft, and empathy. We treat every project as if it were our own product to ship.</p>
+            </div>
+            <div class="about-card">
+              <div class="icon">⬡</div>
+              <h3>Our Team</h3>
+              <p>A distributed crew of 12 across four continents — each bringing a unique perspective to the table.</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- CONTACT -->
+        <section class="tab-panel" id="panel-contact" role="tabpanel" aria-labelledby="tab-contact">
+          <p class="section-label">Get In Touch</p>
+          <div class="divider"></div>
+          <p class="contact-intro">
+            Have a project in mind? We'd love to hear about it. Drop us a message and we'll
+            get back to you within one business day.
+          </p>
+          <form id="contactForm" onsubmit="handleSubmit(event)" novalidate>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="fname">Full Name</label>
+                <input type="text" id="fname" name="name" placeholder="Jane Doe" required autocomplete="name"/>
+              </div>
+              <div class="form-group">
+                <label for="femail">Email Address</label>
+                <input type="email" id="femail" name="email" placeholder="jane@example.com" required autocomplete="email"/>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="fmessage">Message</label>
+              <textarea id="fmessage" name="message" placeholder="Tell us about your project…"></textarea>
+            </div>
+            <button type="submit" class="btn-submit">
+              Send Message
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </button>
+          </form>
+          <div class="toast" id="successToast">
+            <span>✓</span> Message sent! We'll be in touch soon.
+          </div>
+        </section>
+
+      </div><!-- /tab-panels -->
+    </div><!-- /card -->
+
+    <footer class="site-footer">© 2026 Our Studio. All rights reserved.</footer>
+
+  </div><!-- /wrapper -->
+
+  <script>
+    // ── Tab switching ──────────────────────────────────────────────
+    function switchTab(name) {
+      // Deactivate all
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        btn.setAttribute('aria-selected', 'false');
+      });
+      document.querySelectorAll('.tab-panel').forEach(panel => {
+        panel.classList.remove('active');
+      });
+
+      // Activate selected
+      const btn   = document.getElementById('tab-' + name);
+      const panel = document.getElementById('panel-' + name);
+
+      btn.classList.add('active');
+      btn.setAttribute('aria-selected', 'true');
+      panel.classList.add('active');
+    }
+
+    // ── Keyboard navigation ────────────────────────────────────────
+    document.querySelectorAll('.tab-btn').forEach((btn, i, btns) => {
+      btn.addEventListener('keydown', e => {
+        let idx = i;
+        if (e.key === 'ArrowRight') idx = (i + 1) % btns.length;
+        else if (e.key === 'ArrowLeft') idx = (i - 1 + btns.length) % btns.length;
+        else return;
+        btns[idx].focus();
+        btns[idx].click();
+      });
+    });
+
+    // ── Contact form ───────────────────────────────────────────────
+    function handleSubmit(e) {
+      e.preventDefault();
+      const form  = e.target;
+      const name  = form.name.value.trim();
+      const email = form.email.value.trim();
+
+      if (!name || !email) {
+        // Simple shake on missing fields
+        form.querySelectorAll('input:invalid').forEach(input => {
+          input.style.borderColor = '#c06060';
+          input.addEventListener('input', () => {
+            input.style.borderColor = '';
+          }, { once: true });
+        });
+        return;
+      }
+
+      // Simulate send
+      const btn   = form.querySelector('.btn-submit');
+      const toast = document.getElementById('successToast');
+
+      btn.textContent = 'Sending…';
+      btn.disabled = true;
+
+      setTimeout(() => {
+        form.reset();
+        btn.innerHTML = 'Send Message <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;display:inline-block;vertical-align:middle;margin-left:10px"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
+        btn.disabled = false;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 4000);
+      }, 900);
+    }
+  </script>
+</body>
+</html>
