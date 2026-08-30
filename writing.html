@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Alex Chen — About</title>
+<title>Alex Chen — Writing</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&display=swap" rel="stylesheet">
@@ -17,10 +17,10 @@
       </a>
       <div class="role">ML / RL engineer</div>
       <nav>
-        <a href="index.html" class="active">About</a>
+        <a href="index.html">About</a>
         <a href="projects.html">Projects</a>
         <a href="experience.html">Experience</a>
-        <a href="writing.html">Writing</a>
+        <a href="writing.html" class="active">Writing</a>
       </nav>
       <div class="links">
         <a href="mailto:alex@example.com">Email</a>
@@ -31,17 +31,17 @@
     </div>
 
     <main>
-      <span class="tag">Open to research collaborations</span>
-      <p>I build reinforcement learning systems — mostly offline RL, policy evaluation, and the training infrastructure that makes experiments reproducible instead of a folder of one-off scripts.</p>
-      <p class="soft">Currently a research engineer at a robotics lab, working on manipulation policies. Previously built RLHF training infra at scale.</p>
+      <h1>Writing</h1>
+      <p class="page-intro">Notes on reinforcement learning, mostly the unglamorous parts.</p>
 
-      <h2>About</h2>
-      <div class="dropcap-wrap">
-        <p class="dropcap">I spend most of my time on the gap between "works in a notebook" and "works reliably at scale." A lot of RL research dies to bad logging and irreproducible seeds — most of my tooling exists to fix that.</p>
+      <div class="entry">
+        <span class="date">2026.03</span>
+        <a href="#">Why offline RL evals lie to you<span class="desc">On the gap between benchmark reward and real performance</span></a>
       </div>
-      <p class="soft">Outside of work: bouldering, and a running list of unfinished side projects.</p>
-
-      <blockquote class="pull">A result you can't reproduce isn't a result — it's a rumor.</blockquote>
+      <div class="entry">
+        <span class="date">2025.09</span>
+        <a href="#">Notes on reproducible experiment tracking<span class="desc">A checklist I wish I'd had two years ago</span></a>
+      </div>
 
       <footer>Alex Chen — last updated 2026.08</footer>
     </main>
